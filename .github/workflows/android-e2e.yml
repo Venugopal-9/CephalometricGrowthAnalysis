@@ -84,6 +84,11 @@ jobs:
         run: |
           python tests/run_tests.py || true
 
+      - name: Run Node.js Mobile Appium E2E Tests
+        run: |
+          npm --prefix node_testing install
+          node node_testing/run_appium_tests.js || true
+
       - name: Execute Baseline / Load Testing (100 Virtual Users, 60s)
         env:
           BASE_URL: https://Venugopal-9.github.io/CephalometricGrowthAnalysis/
@@ -116,11 +121,13 @@ jobs:
           path: |
             Test Results/Excel/Automation_Test_Report.xlsx
             Test Results/Appium/Excel/Automation_Appium_Test_Report.xlsx
+            Test Results/NodeJS/Excel/Automation_Mobile_Appium_Report.xlsx
             Test Results/HTML/execution-report.html
             Test Results/Screenshots/
             Test Results/Logs/
             Test Results/Summary/summary.md
             Test Results/Appium/
+            Test Results/NodeJS/
           retention-days: 30
 
       - name: Publish GitHub Actions Job Execution Summary

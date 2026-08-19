@@ -107,6 +107,11 @@ jobs:
         run: |
           python tests/run_tests.py
 
+      - name: Execute Node.js Selenium Web E2E Tests
+        run: |
+          npm --prefix node_testing install
+          node node_testing/run_web_tests.js || true
+
       - name: Execute Baseline / Load Testing (100 Virtual Users, 60s)
         env:
           VIRTUAL_USERS: "100"
@@ -121,10 +126,12 @@ jobs:
           name: Live-E2E-Automation-Reports
           path: |
             Test Results/Excel/Automation_Test_Report.xlsx
+            Test Results/NodeJS/Excel/Automation_Web_Test_Report.xlsx
             Test Results/HTML/execution-report.html
             Test Results/Screenshots/
             Test Results/Logs/
             Test Results/Summary/summary.md
+            Test Results/NodeJS/
           retention-days: 30
 
       - name: Publish GitHub Actions Job Execution Summary

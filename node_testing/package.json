@@ -1,0 +1,18 @@
+{
+  "name": "cephgrow-node-automation",
+  "version": "1.0.0",
+  "description": "Node.js Selenium Web and Appium Mobile E2E Automation Framework with Excel Reporting",
+  "main": "run_web_tests.js",
+  "type": "commonjs",
+  "scripts": {
+    "test:web": "node run_web_tests.js",
+    "test:mobile": "node run_appium_tests.js",
+    "generate:web-excel": "node selenium_web/utils/webExcelReporter.js",
+    "generate:mobile-excel": "node appium_mobile/utils/appiumExcelReporter.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "selenium-webdriver": "^4.28.0",
+    "webdriverio": "^9.6.0"
+  }
+}
