@@ -339,3 +339,38 @@ Failed Tests:
         with open(summary_path, "w", encoding="utf-8") as f:
             f.write(md_content)
         logger.info(f"Markdown summary report saved successfully to {summary_path}")
+
+    @staticmethod
+    def publish_reports_to_dist(dist_dir: Path, build_number: str = "1"):
+        """Copies generated test reports into dist/reports/latest and dist/reports/history for GitHub Pages."""
+        import shutil
+        dist_reports = dist_dir / "reports"
+        latest_dir = dist_reports / "latest"
+        history_dir = dist_reports / "history" / f"build-{build_number.zfill(3)}"
+
+        for target in [latest_dir, history_dir]:
+            target.mkdir(parents=True, exist_ok=True)
+            # Copy HTML report
+            if (Config.HTML_DIR / "execution-report.html").exists():
+                shutil.copy(Config.HTML_DIR / "execution-report.html", target / "execution-report.html")
+            # Copy Excel report
+            if (Config.EXCEL_DIR / "Automation_Test_Report.xlsx").exists():
+                shutil.copy(Config.EXCEL_DIR / "Automation_Test_Report.xlsx", target / "Automation_Test_Report.xlsx")
+            # Copy Summary Markdown
+            if (Config.SUMMARY_DIR / "summary.md").exists():
+                shutil.copy(Config.SUMMARY_DIR / "summary.md", target / "summary.md")
+            # Copy Screenshots
+            if Config.SCREENSHOTS_DIR.exists():
+                dest_ss = target / "screenshots"
+                if dest_ss.exists():
+                    shutil.rmtree(dest_ss)
+                shutil.copytree(Config.SCREENSHOTS_DIR, dest_ss)
+            # Copy Logs
+            if Config.LOGS_DIR.exists():
+                dest_logs = target / "logs"
+                if dest_logs.exists():
+                    shutil.rmtree(dest_logs)
+                shutil.copytree(Config.LOGS_DIR, dest_logs)
+
+        logger.info(f"Published test reports to {latest_dir} and {history_dir}")
+
