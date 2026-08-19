@@ -28,6 +28,7 @@ bin
 obj
 .gradle
 local.properties
+Test Results/
 
 # Python Virtual Environments
 venv/
