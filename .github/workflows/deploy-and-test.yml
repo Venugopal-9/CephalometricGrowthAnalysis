@@ -107,6 +107,13 @@ jobs:
         run: |
           python tests/run_tests.py
 
+      - name: Execute Baseline / Load Testing (100 Virtual Users, 60s)
+        env:
+          VIRTUAL_USERS: "100"
+          DURATION_SECONDS: "60"
+        run: |
+          python tests/run_load_test.py
+
       - name: Upload Test Report Artifacts
         if: always()
         uses: actions/upload-artifact@v4

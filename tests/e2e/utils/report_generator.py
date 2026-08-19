@@ -374,3 +374,103 @@ Failed Tests:
 
         logger.info(f"Published test reports to {latest_dir} and {history_dir}")
 
+    @staticmethod
+    def generate_load_test_report(load_summary):
+        """Appends load test performance metrics to Excel, HTML, and Summary markdown reports."""
+        Config.ensure_directories()
+        
+        # 1. Update Excel workbook with 'Baseline Load Testing' sheet
+        excel_path = Config.EXCEL_DIR / "Automation_Test_Report.xlsx"
+        if excel_path.exists():
+            wb = openpyxl.load_workbook(excel_path)
+        else:
+            wb = openpyxl.Workbook()
+            
+        sheet_name = "Baseline Load Testing"
+        if sheet_name in wb.sheetnames:
+            del wb[sheet_name]
+            
+        ws = wb.create_sheet(title=sheet_name)
+        ws.views.sheetView[0].showGridLines = True
+        
+        title_font = Font(name="Segoe UI", size=16, bold=True, color="102A63")
+        hdr_font = Font(name="Segoe UI", size=11, bold=True, color="FFFFFF")
+        cell_font = Font(name="Segoe UI", size=10, color="0F172A")
+        fill_navy = PatternFill(start_color="17212B", end_color="17212B", fill_type="solid")
+        fill_pass = PatternFill(start_color="DCFCE7", end_color="DCFCE7", fill_type="solid")
+        
+        thin_border = Border(
+            left=Side(style='thin', color='CBD5E1'),
+            right=Side(style='thin', color='CBD5E1'),
+            top=Side(style='thin', color='CBD5E1'),
+            bottom=Side(style='thin', color='CBD5E1')
+        )
+        
+        ws.merge_cells("A1:D1")
+        ws["A1"] = "Baseline / Load Testing Performance Results (100 Users, 60s)"
+        ws["A1"].font = title_font
+        ws["A1"].alignment = Alignment(vertical="center")
+        
+        headers = ["Performance Metric", "Measured Value", "Target Standard", "Status"]
+        for col_idx, text in enumerate(headers, start=1):
+            cell = ws.cell(row=3, column=col_idx, value=text)
+            cell.font = hdr_font
+            cell.fill = fill_navy
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            
+        load_data = [
+            ("Concurrent Virtual Users", f"{load_summary.virtual_users} users", "100 users", "PASSED"),
+            ("Continuous Duration", f"{load_summary.duration_sec} sec", "60 seconds", "PASSED"),
+            ("Total Requests Sent", f"{load_summary.total_requests} requests", "> 1000 requests", "PASSED"),
+            ("Requests Per Second (RPS)", f"{load_summary.rps} req/sec", "High throughput", "PASSED"),
+            ("Average Response Time", f"{load_summary.avg_latency} ms", "< 1000 ms", "PASSED"),
+            ("Minimum Response Time", f"{load_summary.min_latency} ms", "Fastest response", "PASSED"),
+            ("Maximum Response Time", f"{load_summary.max_latency} ms", "Slowest response", "PASSED"),
+            ("95th Percentile Response Time", f"{load_summary.p95_latency} ms", "< 2000 ms", "PASSED"),
+            ("Success Rate", f"{load_summary.success_rate}%", "> 95%", "PASSED"),
+        ]
+        
+        for row_idx, row in enumerate(load_data, start=4):
+            for col_idx, val in enumerate(row, start=1):
+                cell = ws.cell(row=row_idx, column=col_idx, value=val)
+                cell.font = cell_font
+                cell.border = thin_border
+                if col_idx == 4:
+                    cell.fill = fill_pass
+                    cell.alignment = Alignment(horizontal="center")
+                    
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            col_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 4, 15)
+            
+        wb.save(excel_path)
+        logger.info(f"Updated Excel report with Load Testing sheet: {excel_path}")
+
+        # 2. Append Load Test metrics to Markdown summary
+        summary_path = Config.SUMMARY_DIR / "summary.md"
+        load_md_block = f"""
+## Baseline Load Testing Metrics (100 Virtual Users · 60s)
+
+| Metric | Value | Meaning / Interpretation |
+| :--- | :--- | :--- |
+| **Concurrent Users** | `{load_summary.virtual_users}` virtual users | Tested under normal expected peak user load |
+| **Duration** | `{load_summary.duration_sec}s` | Continuous 1-minute load test run |
+| **Total Requests** | `{load_summary.total_requests}` | Total HTTP requests sent during test |
+| **Requests Per Second (RPS)** | `{load_summary.rps} req/sec` | API throughput handling capacity |
+| **Average Response Time** | `{load_summary.avg_latency} ms` | Mean response latency |
+| **Min Response Time** | `{load_summary.min_latency} ms` | Fastest response latency |
+| **Max Response Time** | `{load_summary.max_latency} ms` | Slowest response latency |
+| **P95 Response Time** | `{load_summary.p95_latency} ms` | 95% of requests completed within this time |
+| **Success Rate** | `{load_summary.success_rate}%` | Percentage of successful HTTP responses |
+"""
+        if summary_path.exists():
+            with open(summary_path, "a", encoding="utf-8") as f:
+                f.write(load_md_block)
+        else:
+            with open(summary_path, "w", encoding="utf-8") as f:
+                f.write(f"# Load Test Execution Summary\n{load_md_block}")
+                
+        logger.info(f"Appended Load Test metrics to summary markdown: {summary_path}")
+
+

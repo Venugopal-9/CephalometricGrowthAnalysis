@@ -84,6 +84,14 @@ jobs:
         run: |
           python tests/run_tests.py || true
 
+      - name: Execute Baseline / Load Testing (100 Virtual Users, 60s)
+        env:
+          BASE_URL: https://Venugopal-9.github.io/CephalometricGrowthAnalysis/
+          VIRTUAL_USERS: "100"
+          DURATION_SECONDS: "60"
+        run: |
+          python tests/run_load_test.py || true
+
       - name: Structure and Publish HTML Reports into dist/reports/
         run: |
           python -c "from tests.e2e.utils.report_generator import ReportGenerator; from pathlib import Path; ReportGenerator.publish_reports_to_dist(Path('./frontend/dist'), '${{ github.run_number }}')"
