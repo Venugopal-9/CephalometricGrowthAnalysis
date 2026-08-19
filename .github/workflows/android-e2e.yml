@@ -115,10 +115,12 @@ jobs:
           name: Android-Appium-and-E2E-Test-Reports
           path: |
             Test Results/Excel/Automation_Test_Report.xlsx
+            Test Results/Appium/Excel/Automation_Appium_Test_Report.xlsx
             Test Results/HTML/execution-report.html
             Test Results/Screenshots/
             Test Results/Logs/
             Test Results/Summary/summary.md
+            Test Results/Appium/
           retention-days: 30
 
       - name: Publish GitHub Actions Job Execution Summary

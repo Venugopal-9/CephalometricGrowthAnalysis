@@ -4,9 +4,9 @@ from appium import webdriver
 from appium.options.android import UiAutomator2Options
 
 from tests.appium.config.appium_config import AppiumConfig
+from tests.appium.utils.appium_report_generator import AppiumReportGenerator, AppiumTestResultItem
 from tests.e2e.config.config import Config
 from tests.e2e.utils.logger import get_logger
-from tests.e2e.utils.report_generator import ReportGenerator, TestResultItem
 
 logger = get_logger("ConftestAppium")
 APPIUM_RESULTS_LIST = []
@@ -40,7 +40,7 @@ def pytest_runtest_makereport(item, call):
     report = outcome.get_result()
     
     if report.when == "call":
-        suite_name = "AppiumAndroidSuite"
+        suite_name = item.parent.name if item.parent else "AppiumAndroidSuite"
         test_name = item.name
         duration = report.duration
         status = report.outcome.upper()
@@ -60,7 +60,7 @@ def pytest_runtest_makereport(item, call):
                 except Exception as ss_err:
                     logger.warning(f"Could not capture Appium screenshot: {ss_err}")
 
-        result_item = TestResultItem(
+        result_item = AppiumTestResultItem(
             name=test_name,
             suite=suite_name,
             status=status,
@@ -72,5 +72,5 @@ def pytest_runtest_makereport(item, call):
 
 def pytest_sessionfinish(session, exitstatus):
     if APPIUM_RESULTS_LIST:
-        generator = ReportGenerator(APPIUM_RESULTS_LIST)
+        generator = AppiumReportGenerator(APPIUM_RESULTS_LIST)
         generator.generate_all()
