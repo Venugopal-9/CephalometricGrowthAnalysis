@@ -112,6 +112,10 @@ jobs:
           npm --prefix node_testing install
           node node_testing/run_web_tests.js || true
 
+      - name: Execute Master 100+ Unique Test Case Suite
+        run: |
+          python tests/run_master_100plus_suite.py
+
       - name: Execute Baseline / Load Testing (100 Virtual Users, 60s)
         env:
           VIRTUAL_USERS: "100"
@@ -125,6 +129,8 @@ jobs:
         with:
           name: Live-E2E-Automation-Reports
           path: |
+            Test Results/Comprehensive_100_Plus_Test_Matrix.xlsx
+            Test Results/Comprehensive_Test_Summary.md
             Test Results/Excel/Automation_Test_Report.xlsx
             Test Results/NodeJS/Excel/Automation_Web_Test_Report.xlsx
             Test Results/HTML/execution-report.html
