@@ -30,11 +30,13 @@ obj
 local.properties
 Test Results/
 
-# Python Virtual Environments
+# Python Virtual Environments & Caches
 venv/
 .venv/
 env/
 ENV/
+__pycache__/
+*.pyc
 
 # Editor & OS files
 .vscode/*
