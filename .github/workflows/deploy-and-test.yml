@@ -97,7 +97,7 @@ jobs:
             echo "Attempt $i: HTTP Status = $STATUS"
             if [ "$STATUS" -eq 200 ]; then
               echo "Live site is up and reachable!"
-              exit 0
+              break
             fi
             sleep 5
           done
