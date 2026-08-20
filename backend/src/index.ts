@@ -248,8 +248,100 @@ app.get('/api/health', (_request, response) => {
     service: 'CephGrow AI API',
     database: hasDatabaseUrl ? 'configured' : 'demo-mode',
     ai: openRouter ? 'configured' : 'demo-mode',
+    userSync: 'enabled',
   })
 })
+
+const registerSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Valid email is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.string().optional().default('clinician'),
+})
+
+const loginSchema = z.object({
+  email: z.string().email('Valid email is required'),
+  password: z.string().min(1, 'Password is required'),
+})
+
+app.post('/api/auth/register', async (request, response, next) => {
+  try {
+    const body = registerSchema.parse(request.body ?? {})
+    
+    if (!hasDatabaseUrl) {
+      const mockUser = { id: randomUUID(), name: body.name, email: body.email, role: body.role, createdAt: new Date().toISOString() }
+      response.status(201).json({ ok: true, user: mockUser, token: `sync_token_${mockUser.id}` })
+      return
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email: body.email } })
+    if (existing) {
+      response.status(400).json({ error: 'User with this email already exists.' })
+      return
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        name: body.name,
+        email: body.email,
+        password: body.password,
+        role: body.role,
+      },
+    })
+
+    const { password: _, ...userWithoutPassword } = user
+    response.status(201).json({ ok: true, user: userWithoutPassword, token: `sync_token_${user.id}` })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/auth/login', async (request, response, next) => {
+  try {
+    const body = loginSchema.parse(request.body ?? {})
+
+    if (!hasDatabaseUrl) {
+      const mockUser = { id: 'usr-001', name: 'Dr. Meera Iyer', email: body.email, role: 'Orthodontist', createdAt: new Date().toISOString() }
+      response.json({ ok: true, user: mockUser, token: `sync_token_${mockUser.id}` })
+      return
+    }
+
+    const user = await prisma.user.findFirst({
+      where: { email: body.email, password: body.password },
+    })
+
+    if (!user) {
+      response.status(401).json({ error: 'Invalid email or password.' })
+      return
+    }
+
+    const { password: _, ...userWithoutPassword } = user
+    response.json({ ok: true, user: userWithoutPassword, token: `sync_token_${user.id}` })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.get('/api/auth/users', async (_request, response, next) => {
+  try {
+    if (!hasDatabaseUrl) {
+      response.json([
+        { id: 'usr-001', name: 'Dr. Meera Iyer', email: 'doctor@cephgrow.ai', role: 'Orthodontist' },
+        { id: 'usr-002', name: 'Dr. Arjun Menon', email: 'arjun@cephgrow.ai', role: 'Radiologist' },
+      ])
+      return
+    }
+
+    const users = await prisma.user.findMany({
+      select: { id: true, name: true, email: true, role: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    })
+    response.json(users)
+  } catch (error) {
+    next(error)
+  }
+})
+
 
 app.get('/api/analyses', async (_request, response, next) => {
   try {
