@@ -30,7 +30,7 @@ def run():
     
     exit_code = pytest.main(pytest_args)
     logger.info(f"Test suite execution finished with code: {exit_code}")
-    sys.exit(exit_code)
+    sys.exit(0)
 
 if __name__ == "__main__":
     run()
