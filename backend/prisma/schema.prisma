@@ -3,8 +3,34 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("clinician")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  analyses  Analysis[]
+
+  @@map("users")
+}
+
+model Patient {
+  id            String   @id @default(uuid())
+  name          String
+  age           Int
+  sex           String
+  clinicalNotes String?  @map("clinical_notes")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  analyses  Analysis[]
+
+  @@map("patients")
 }
 
 model Analysis {
@@ -16,6 +42,11 @@ model Analysis {
   confidence  Int
   aiSummary   String   @map("ai_summary")
   createdAt   DateTime @default(now()) @map("created_at")
+
+  userId      String?  @map("user_id")
+  patientId   String?  @map("patient_id")
+  user        User?    @relation(fields: [userId], references: [id])
+  patient     Patient? @relation(fields: [patientId], references: [id])
 
   @@map("analyses")
 }
