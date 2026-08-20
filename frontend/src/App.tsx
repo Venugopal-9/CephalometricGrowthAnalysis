@@ -330,11 +330,41 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
-      login: (email) => {
-        persistUser({ name: email.split('@')[0] || 'Clinician', email })
+      login: (email, password) => {
+        fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.ok && data.user) {
+              persistUser({ name: data.user.name, email: data.user.email })
+            } else {
+              persistUser({ name: email.split('@')[0] || 'Clinician', email })
+            }
+          })
+          .catch(() => {
+            persistUser({ name: email.split('@')[0] || 'Clinician', email })
+          })
       },
-      signup: (name, email) => {
-        persistUser({ name: name || 'Clinician', email })
+      signup: (name, email, password) => {
+        fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name || 'Clinician', email, password: password || 'cephgrow123' }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.ok && data.user) {
+              persistUser({ name: data.user.name, email: data.user.email })
+            } else {
+              persistUser({ name: name || 'Clinician', email })
+            }
+          })
+          .catch(() => {
+            persistUser({ name: name || 'Clinician', email })
+          })
       },
       logout: () => {
         localStorage.removeItem('cephgrow-user')
