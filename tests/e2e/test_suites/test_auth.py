@@ -8,12 +8,6 @@ from tests.e2e.pages.dashboard_page import DashboardPage
 class TestAuthentication:
     def test_login_flow(self, driver):
         """Verify successful login redirects user to protected clinical dashboard."""
-        driver.get(Config.BASE_URL)
-        try:
-            driver.execute_script("window.localStorage.clear();")
-        except Exception:
-            pass
-        
         auth = AuthPage(driver)
         auth.login("doctor@cephgrow.ai", "cephgrow123")
         
@@ -22,12 +16,6 @@ class TestAuthentication:
 
     def test_signup_flow(self, driver):
         """Verify new clinician signup redirects to clinical workspace dashboard."""
-        driver.get(Config.BASE_URL)
-        try:
-            driver.execute_script("window.localStorage.clear();")
-        except Exception:
-            pass
-
         auth = AuthPage(driver)
         auth.signup(name="Dr. Test Specialist", email="specialist@cephgrow.ai", password="password123")
         

@@ -31,24 +31,22 @@ class AuthPage(BasePage):
         self.click(self.SUBMIT_BTN)
 
     def login(self, email: str = "doctor@cephgrow.ai", password: str = "cephgrow123"):
-        self.driver.get(Config.BASE_URL)
+        self.navigate_to("login")
         try:
             self.driver.execute_script("window.localStorage.clear();")
         except Exception:
             pass
-        self.navigate_to("login")
         self.enter_email(email)
         self.enter_password(password)
         self.submit_form()
         time.sleep(1.5)
 
     def signup(self, name: str = "Dr. John Doe", email: str = "john@cephgrow.ai", password: str = "securepass123"):
-        self.driver.get(Config.BASE_URL)
+        self.navigate_to("signup")
         try:
             self.driver.execute_script("window.localStorage.clear();")
         except Exception:
             pass
-        self.navigate_to("signup")
         self.enter_name(name)
         self.enter_email(email)
         self.enter_password(password)

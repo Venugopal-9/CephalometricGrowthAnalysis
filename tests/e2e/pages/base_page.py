@@ -19,18 +19,29 @@ class BasePage:
         self.wait = WebDriverWait(driver, Config.EXPLICIT_WAIT)
 
     def navigate_to(self, path: str = ""):
-        target_url = f"{Config.BASE_URL.rstrip('/')}/{path.lstrip('/')}"
+        clean_path = path.lstrip('/')
+        target_url = f"{Config.BASE_URL.rstrip('/')}/{clean_path}" if clean_path else Config.BASE_URL
         logger.info(f"Navigating to: {target_url}")
-        self.driver.get(target_url)
-        # Allow client-side React Router redirects and DOM mounting to settle
-        time.sleep(1.5)
-        # Wait until page document state is complete
-        try:
-            WebDriverWait(self.driver, 10).until(
-                lambda d: d.execute_script("return document.readyState") == "complete"
-            )
-        except Exception:
-            pass
+        
+        base_origin = Config.BASE_URL.rstrip('/')
+        current_url = self.driver.current_url.lower() if self.driver.current_url else ""
+        
+        if not current_url.startswith("http") or base_origin not in current_url:
+            self.driver.get(Config.BASE_URL)
+            time.sleep(1.5)
+
+        if clean_path:
+            route_path = f"/CephalometricGrowthAnalysis/{clean_path}" if "CephalometricGrowthAnalysis" in Config.BASE_URL else f"/{clean_path}"
+            js_nav = """
+            var target = arguments[0];
+            window.history.pushState({}, '', target);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+            """
+            try:
+                self.driver.execute_script(js_nav, route_path)
+            except Exception:
+                self.driver.get(target_url)
+        time.sleep(1)
 
     def get_current_url(self) -> str:
         return self.driver.current_url
