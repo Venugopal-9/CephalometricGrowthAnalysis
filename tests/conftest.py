@@ -17,6 +17,7 @@ def driver():
     Config.ensure_directories()
     options = Options()
     
+    options.page_load_strategy = 'eager'
     if Config.HEADLESS:
         options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
@@ -34,7 +35,7 @@ def driver():
         raise e
 
     browser.implicitly_wait(Config.IMPLICIT_WAIT)
-    browser.set_page_load_timeout(30)
+    browser.set_page_load_timeout(60)
     
     yield browser
     

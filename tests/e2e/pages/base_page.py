@@ -22,6 +22,15 @@ class BasePage:
         target_url = f"{Config.BASE_URL.rstrip('/')}/{path.lstrip('/')}"
         logger.info(f"Navigating to: {target_url}")
         self.driver.get(target_url)
+        # Allow client-side React Router redirects and DOM mounting to settle
+        time.sleep(1.5)
+        # Wait until page document state is complete
+        try:
+            WebDriverWait(self.driver, 10).until(
+                lambda d: d.execute_script("return document.readyState") == "complete"
+            )
+        except Exception:
+            pass
 
     def get_current_url(self) -> str:
         return self.driver.current_url
