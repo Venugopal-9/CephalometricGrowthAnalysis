@@ -5,6 +5,11 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   android-appium-test:
     runs-on: ubuntu-latest
@@ -52,3 +57,4 @@ jobs:
         with:
           folder: reports
           target-folder: reports
+          token: ${{ secrets.GITHUB_TOKEN }}
