@@ -1,0 +1,54 @@
+name: CephGrow AI — Backend Security Review & Policy Gate
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Root Dependencies (exceljs)
+        run: |
+          npm ci
+
+      - name: Execute Backend Security Audit Suite
+        run: |
+          export NODE_PATH=$(pwd)/node_modules
+          node backend/scripts/generateSecuritySuite.js
+
+      - name: Append Executive Summary to Step Summary
+        run: |
+          cat executive-summary.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Enforce Zero-Critical Security Policy Gate
+        run: |
+          CRITICAL_COUNT=$(grep -i "Critical Findings" executive-summary.md | grep -o '[0-9]\+' | head -n 1 || echo "0")
+          echo "Extracted Critical Findings Count: ${CRITICAL_COUNT}"
+          if [ "${CRITICAL_COUNT}" -gt 0 ]; then
+            echo "❌ Security Gate FAILED: Found ${CRITICAL_COUNT} Critical vulnerabilities."
+            exit 1
+          else
+            echo "✅ Security Gate PASSED: 0 Critical vulnerabilities detected."
+          fi
+
+      - name: Upload Security Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-security-artifacts
+          path: |
+            findings.xlsx
+            security-review.md
+            dependency-report.md
+            executive-summary.md

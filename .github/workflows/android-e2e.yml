@@ -1,0 +1,54 @@
+name: CephGrow AI — Android Mobile Appium E2E Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  android-appium-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+
+      - name: Enable KVM Hardware Acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm-nodes.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm || true
+
+      - name: Execute Android Appium Tests via Emulator Runner
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          profile: Nexus 6
+          target: default
+          arch: x86_64
+          script: bash CephGrowAppium/scripts/ci_run_tests.sh
+
+      - name: Prepare Artifact Reports for Pages
+        run: |
+          mkdir -p reports/latest
+          mkdir -p reports/history/build-${{ github.run_number }}
+          if [ -f Test_Results/HTML/execution-report.html ]; then
+            cp Test_Results/HTML/execution-report.html reports/latest/execution-report.html
+            cp Test_Results/HTML/execution-report.html reports/history/build-${{ github.run_number }}/execution-report.html
+          fi
+          if [ -f Test_Results/Excel/mobile-report.xlsx ]; then
+            cp Test_Results/Excel/mobile-report.xlsx reports/latest/mobile-report.xlsx
+          fi
+
+      - name: Deploy Mobile Reports to GitHub Pages Branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: reports
+          target-folder: reports

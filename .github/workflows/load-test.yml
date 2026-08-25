@@ -1,0 +1,39 @@
+name: CephGrow AI — API Load Testing Pipeline (k6)
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/load-test.yml'
+  workflow_dispatch:
+
+jobs:
+  k6-load-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup k6 Action
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run k6 Load Test (100 VUs / 1 min)
+        run: |
+          k6 run --summary-export=summary.json backend/scripts/load-test.js || true
+
+      - name: Execute Defensive JSON Summary Parser
+        run: |
+          node backend/scripts/parseK6Summary.js
+
+      - name: Upload Load Test Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-load-test-summary
+          path: |
+            summary.json
+            k6-summary-report.md
