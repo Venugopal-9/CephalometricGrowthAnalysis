@@ -316,6 +316,24 @@ export function ReferenceLandmarkOverlay({ visible }: { visible: boolean }) {
   )
 }
 
+const PRODUCTION_BACKEND_URL = 'https://cephalometricgrowthanalysis-production.up.railway.app'
+
+export const getApiUrl = (endpoint: string) => {
+  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_DEPLOYED_API_URL
+  const isCapacitorMobile = typeof window !== 'undefined' && (
+    (window as any).Capacitor?.isNativePlatform?.() ||
+    window.location.protocol === 'capacitor:' ||
+    (window.location.hostname === 'localhost' && !window.location.port)
+  )
+  
+  const baseUrl = isCapacitorMobile
+    ? (envUrl || PRODUCTION_BACKEND_URL)
+    : (window.location.hostname === 'localhost' && window.location.port === '5173' ? '' : (envUrl || PRODUCTION_BACKEND_URL))
+
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  return baseUrl ? `${baseUrl.replace(/\/+$/, '')}${cleanEndpoint}` : cleanEndpoint
+}
+
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('cephgrow-user')
@@ -331,7 +349,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       login: (email, password) => {
-        fetch('/api/auth/login', {
+        fetch(getApiUrl('/api/auth/login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
@@ -349,7 +367,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
           })
       },
       signup: (name, email, password) => {
-        fetch('/api/auth/register', {
+        fetch(getApiUrl('/api/auth/register'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: name || 'Clinician', email, password: password || 'cephgrow123' }),
@@ -823,7 +841,7 @@ function UploadPage() {
   const predictedClass = useMemo(() => classify(angle), [angle])
   const resultAngle = analysisResult ? Number(analysisResult.angle) : angle
   const resultClass = analysisResult?.growthClass ?? predictedClass
-  const apiBaseUrl = window.location.hostname === 'localhost' ? '' : import.meta.env.VITE_API_URL || ''
+  const apiBaseUrl = getApiUrl('')
 
   const handleFile = (file: File | undefined) => {
     if (!file) return

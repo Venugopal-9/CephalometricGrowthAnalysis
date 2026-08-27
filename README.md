@@ -52,6 +52,7 @@ No Android folder is included.
 
 ## Tech Stack
 
+- Mobile: React Native, Expo, React Navigation, React Native SVG, Async Storage, Lucide Icons
 - Frontend: React, TypeScript, Vite, TailwindCSS
 - 3D: Three.js, React Three Fiber, Drei
 - Backend: Node.js, Express, TypeScript

@@ -43,7 +43,7 @@ const openRouter = process.env.OPENROUTER_API_KEY
 const createAnalysisSchema = z.object({
   patientName: z.string().min(1).default('Untitled patient'),
   analysisMode: z.enum(['measurements', 'image-assisted']).default('measurements'),
-  angle: z.coerce.number().min(0).max(90),
+  angle: z.coerce.number().min(0).max(180),
   age: z.coerce.number().min(4).max(30).optional(),
   sex: z.enum(['female', 'male', 'unspecified']).default('unspecified'),
   fma: z.coerce.number().min(10).max(60).optional(),
@@ -102,8 +102,8 @@ const demoAnalyses = [
 ]
 
 function classifyGrowth(angle: number): GrowthClass {
-  if (angle <= 27) return 'Horizontal'
-  if (angle >= 38) return 'Vertical'
+  if (angle < 121) return 'Horizontal'
+  if (angle > 135) return 'Vertical'
   return 'Average'
 }
 
