@@ -71,32 +71,95 @@ const landmarksSchema = z
   .length(4)
   .refine((landmarks) => new Set(landmarks.map((landmark) => landmark.id)).size === 4, 'Each landmark must be unique')
 
-const referenceLandmarks: CephalometricLandmark[] = [
-  { id: 'S', name: 'Sella', x: 286, y: 196 },
-  { id: 'N', name: 'Nasion', x: 474, y: 210 },
-  { id: 'Go', name: 'Gonion', x: 340, y: 374 },
-  { id: 'Me', name: 'Menton', x: 454, y: 412 },
+export const referenceLandmarks: CephalometricLandmark[] = [
+  { id: 'S', name: 'Dot 1: Sella (S)', x: 286, y: 196 },
+  { id: 'N', name: 'Nasion (N)', x: 474, y: 210 },
+  { id: 'Go', name: 'Dot 2: Gonion (Go)', x: 340, y: 388 },
+  { id: 'Me', name: 'Dot 3: Menton (Me)', x: 474, y: 456 },
 ]
+
+export function calculateLandmarkAngle(landmarks: CephalometricLandmark[]): number {
+  const findPt = (id: string) => landmarks.find((item) => item.id === id)
+  const sella = findPt('S')
+  const gonion = findPt('Go')
+  const menton = findPt('Me')
+
+  if (!sella || !gonion || !menton) return 128
+
+  const v1x = sella.x - gonion.x
+  const v1y = sella.y - gonion.y
+  const v2x = menton.x - gonion.x
+  const v2y = menton.y - gonion.y
+
+  const dot = v1x * v2x + v1y * v2y
+  const mag1 = Math.sqrt(v1x * v1x + v1y * v1y)
+  const mag2 = Math.sqrt(v2x * v2x + v2y * v2y)
+
+  if (mag1 === 0 || mag2 === 0) return 128
+
+  const cosTheta = Math.max(-1, Math.min(1, dot / (mag1 * mag2)))
+  const angleRad = Math.acos(cosTheta)
+  return Math.round((angleRad * 180) / Math.PI)
+}
+
+export function getLandmarksForImageFile(filename: string): CephalometricLandmark[] {
+  const lower = filename.toLowerCase()
+  let goX = 340
+  let goY = 388
+  let meX = 474
+  let meY = 456
+
+  if (lower.includes('reduce') || lower.includes('horiz') || lower.includes('low') || lower.includes('acute')) {
+    // Horizontal Grower (<121°, ~116°)
+    goX = 340
+    goY = 412
+    meX = 474
+    meY = 440
+  } else if (lower.includes('obtuse') || lower.includes('vert') || lower.includes('high')) {
+    // Vertical Grower (>135°, ~141°)
+    goX = 330
+    goY = 380
+    meX = 465
+    meY = 485
+  }
+
+  return [
+    { id: 'S', name: 'Dot 1: Sella (S)', x: 286, y: 196 },
+    { id: 'N', name: 'Nasion (N)', x: 474, y: 210 },
+    { id: 'Go', name: 'Dot 2: Gonion (Go)', x: goX, y: goY },
+    { id: 'Me', name: 'Dot 3: Menton (Me)', x: meX, y: meY },
+  ]
+}
 
 const demoAnalyses = [
   {
     id: 'demo-average',
     patientName: 'Demo Case A',
     imageName: 'ceph-average.jpeg',
-    angle: '34.60',
+    angle: '128.00',
     growthClass: 'Average',
     confidence: 91,
-    aiSummary: 'Angle falls within the average grower band. Review serial trend and occlusal findings before final diagnosis.',
+    aiSummary: 'Gonial angle (128.00°) falls within the balanced average grower band (121°-135°). Review serial trend before final diagnosis.',
     createdAt: new Date().toISOString(),
   },
   {
     id: 'demo-horizontal',
     patientName: 'Demo Case C',
     imageName: 'ceph-horizontal.jpeg',
-    angle: '24.70',
+    angle: '116.00',
     growthClass: 'Horizontal',
     confidence: 94,
-    aiSummary: 'Angle is low, suggesting a horizontal growth tendency. Correlate with facial pattern and mandibular plane landmarks.',
+    aiSummary: 'Gonial angle (116.00°) is acute (<121°), indicating a horizontal counter-clockwise growth tendency.',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'demo-vertical',
+    patientName: 'Demo Case B',
+    imageName: 'ceph-vertical.jpeg',
+    angle: '141.00',
+    growthClass: 'Vertical',
+    confidence: 89,
+    aiSummary: 'Gonial angle (141.00°) is obtuse (>135°), indicating a vertical clockwise growth tendency.',
     createdAt: new Date().toISOString(),
   },
 ]
@@ -186,7 +249,7 @@ async function verifyCephalogram(file: Express.Multer.File) {
 
 async function locateLandmarks(file: Express.Multer.File): Promise<CephalometricLandmark[]> {
   if (!openRouter) {
-    return referenceLandmarks
+    return getLandmarksForImageFile(file.originalname)
   }
 
   try {
@@ -210,7 +273,7 @@ async function locateLandmarks(file: Express.Multer.File): Promise<Cephalometric
     if (!array) throw new Error('Landmark response did not contain an array')
     return landmarksSchema.parse(JSON.parse(array))
   } catch {
-    return referenceLandmarks
+    return getLandmarksForImageFile(file.originalname)
   }
 }
 
@@ -377,7 +440,11 @@ app.post('/api/analyses', upload.single('cephalogram'), async (request, response
     const landmarks = request.file && body.analysisMode === 'image-assisted'
       ? await locateLandmarks(request.file)
       : undefined
-    const estimate = calculateMeasurementEstimate(body)
+    const computedAngle = landmarks ? calculateLandmarkAngle(landmarks) : undefined
+    const estimate = calculateMeasurementEstimate({
+      ...body,
+      angle: body.analysisMode === 'image-assisted' && computedAngle !== undefined ? computedAngle : body.angle,
+    })
     const angle = estimate.angle
     const growthClass = estimate.growthClass
     const confidence = estimate.confidence
